@@ -29,16 +29,26 @@ export class FormTrigger implements INodeType {
 				name: 'displayForm',
 				httpMethod: 'GET',
 				responseMode: 'onReceived',
-				path: 'webhook',
+				path: '={{$parameter.path}}',
+				isFullPath: true,
 			},
 			{
 				name: 'default',
 				httpMethod: 'POST',
 				responseMode: 'onReceived',
-				path: 'webhook',
+				path: '={{$parameter.path}}',
+				isFullPath: true,
 			},
 		],
 		properties: [
+			{
+				displayName: 'Path',
+				name: 'path',
+				type: 'string',
+				default: 'forms/my-form',
+				placeholder: 'webhook',
+				required: true,
+			},
 			{
 				displayName: 'Page Title',
 				type: 'string',
@@ -128,15 +138,15 @@ export class FormTrigger implements INodeType {
 				default: {},
 				options: [
 					{
-						displayName: 'Submit Button Label',
-						name: 'submitLabel',
-						default: 'Submit',
-						type: 'string',
-					},
-					{
 						displayName: 'CSS File',
 						name: 'cssFile',
 						default: 'https://joffcom.github.io/style.css',
+						type: 'string',
+					},
+					{
+						displayName: 'Submit Button Label',
+						name: 'submitLabel',
+						default: 'Submit',
 						type: 'string',
 					},
 				],
