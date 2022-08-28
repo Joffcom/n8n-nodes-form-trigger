@@ -67,7 +67,7 @@ export class FormTrigger implements INodeType {
 					{
 						name: 'Custom Form HTML',
 						value: 'customHTML',
-						description: 'Use your own HTML for the form body'
+						description: 'Use your own HTML for the form body',
 					},
 					{
 						name: 'Form Builder',
@@ -286,19 +286,19 @@ return false;
 				) as unknown as IDataObject[];
 
 				for (const field of formFields) {
-					htmlFields += '<div class="form-group">'
+					htmlFields += '<div class="form-group">';
 					// No label for hidden fields
 					if (field.inputType !== 'hidden') {
-						htmlFields += `<label for="${field.name}">${field.label}</label>`
-						htmlFields += `<input type="${field.inputType}" class="form-control" id="${field.name}" name="${field.name}" value"${field.value}"/>`
+						htmlFields += `<label for="${field.name}">${field.label}</label>`;
+						htmlFields += `<input type="${field.inputType}" class="form-control" id="${field.name}" name="${field.name}" value"${field.value}"/>`;
 					} else {
-						htmlFields += `<input type="${field.inputType}" class="form-control" id="${field.name}" name="${field.name}" ${field.required ? 'required' : ''}/>`
+						htmlFields += `<input type="${field.inputType}" class="form-control" id="${field.name}" name="${field.name}" ${field.required ? 'required' : ''}/>`;
 					}
 					htmlFields += '</div>';
 				}
 			}
 
-			let defaultJS = `$(document).on('submit','#n8n-form',function(e){
+			const defaultJS = `$(document).on('submit','#n8n-form',function(e){
 	$.post('#', $('#n8n-form').serialize(), function(result) {
 		var resp = jQuery.parseJSON(result);
 		if (resp.status === 'ok') {
@@ -314,11 +314,11 @@ return false;
 	return false;
 });`;
 
-			let javascript = options.javascript ? options.javascript : defaultJS;
-			let formName = options.formName ? options.formName : 'n8n-form';
-			let formId = options.formId ? options.formId : 'n8n-form';
-			let jQuery = options.jQuery ? options.jQuery : 'https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js';
-			let bootstrapCss = options.bootstrap ? options.bootstrap : 'https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css';
+			const javascript = options.javascript ? options.javascript : defaultJS;
+			const formName = options.formName ? options.formName : 'n8n-form';
+			const formId = options.formId ? options.formId : 'n8n-form';
+			const jQuery = options.jQuery ? options.jQuery : 'https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js';
+			const bootstrapCss = options.bootstrap ? options.bootstrap : 'https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css';
 
 
 			const res = this.getResponseObject();
