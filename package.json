@@ -1,9 +1,10 @@
 {
   "name": "n8n-nodes-form-trigger",
   "version": "0.1.0",
-  "description": "",
+  "description": "Form builder and trigger for n8n workflows",
   "keywords": [
-    "n8n-community-node-package"
+    "n8n-community-node-package",
+    "n8n-node-athon"
   ],
   "license": "MIT",
   "homepage": "",

@@ -1,5 +1,4 @@
 import {
-	IHookFunctions,
 	IWebhookFunctions,
 } from 'n8n-core';
 
@@ -8,7 +7,6 @@ import {
 	INodeType,
 	INodeTypeDescription,
 	IWebhookResponseData,
-	NodeOperationError,
 } from 'n8n-workflow';
 
 export class FormTrigger implements INodeType {
@@ -18,7 +16,7 @@ export class FormTrigger implements INodeType {
 		icon: 'file:webhook.svg',
 		group: ['trigger'],
 		version: 1,
-		description: 'Starts the workflow when Form events occur',
+		description: 'Starts a workflow when Form events occur',
 		defaults: {
 			name: 'Form Trigger',
 		},
@@ -62,6 +60,41 @@ export class FormTrigger implements INodeType {
 				name: 'pageDescription',
 			},
 			{
+				displayName: 'Form Type',
+				name: 'formType',
+				type: 'options',
+				options: [
+					{
+						name: 'Custom Form HTML',
+						value: 'customHTML',
+						description: 'Use your own HTML for the form body'
+					},
+					{
+						name: 'Form Builder',
+						value: 'formBuilder',
+						description: 'Use a simple form builder',
+					},
+				],
+				default: 'formBuilder',
+			},
+			{
+				displayName: 'Form HTML',
+				name: 'formHTML',
+				description: 'HTML to use for your form body',
+				type: 'string',
+				typeOptions: {
+					alwaysOpenEditWindow: true,
+				},
+				default: '',
+				displayOptions: {
+					show: {
+						formType: [
+							'customHTML',
+						],
+					},
+				},
+			},
+			{
 				displayName: 'Fields',
 				name: 'fields',
 				placeholder: 'Add Fields',
@@ -69,6 +102,14 @@ export class FormTrigger implements INodeType {
 				type: 'fixedCollection',
 				typeOptions: {
 					multipleValues: true,
+					sortable: true,
+				},
+				displayOptions: {
+					show: {
+						formType: [
+							'formBuilder',
+						],
+					},
 				},
 				default: {},
 				options: [
@@ -120,6 +161,20 @@ export class FormTrigger implements INodeType {
 								],
 							},
 							{
+								displayName: 'Value',
+								name: 'value',
+								type: 'string',
+								default: '',
+								description: 'Default value to use',
+								displayOptions : {
+									show: {
+										inputType: [
+											'hidden',
+										],
+									},
+								},
+							},
+							{
 								displayName: 'Required',
 								name: 'required',
 								type: 'boolean',
@@ -138,112 +193,75 @@ export class FormTrigger implements INodeType {
 				default: {},
 				options: [
 					{
+						displayName: 'Bootstrap URL',
+						name: 'bootstrap',
+						default: 'https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css',
+						type: 'string',
+						description: 'URL for Bootstrap CSS',
+					},
+					{
 						displayName: 'CSS File',
 						name: 'cssFile',
 						default: 'https://joffcom.github.io/style.css',
 						type: 'string',
+						description: 'URL for custom CSS, For an example see "https://joffcom.github.io/style.css"',
+					},
+					{
+						displayName: 'Form ID',
+						name: 'formId',
+						default: 'n8n-form',
+						type: 'string',
+						description: 'Form ID to use',
+					},
+					{
+						displayName: 'Form Name',
+						name: 'formName',
+						default: 'n8n-form',
+						type: 'string',
+						description: 'Form Name to use',
+					},
+					{
+						displayName: 'Javascript',
+						name: 'javascript',
+						default: `$(document).on('submit','#n8n-form',function(e){
+	$.post('#', $('#n8n-form').serialize(), function(result) {
+		var resp = jQuery.parseJSON(result);
+		if (resp.status === 'ok') {
+			$("#status").attr('class', 'alert alert-success');
+			$("#status").show();
+			$('#status-text').text('Form has been submitted.');
+		} else {
+			$("#status").attr('class', 'alert alert-danger');
+			$("#status").show();
+			$('#status-text').text('Something went wrong.');
+		}
+	});
+return false;
+});`,
+						type: 'string',
+						typeOptions: {
+							alwaysOpenEditWindow: true,
+						},
+						description: 'Javascript to use for form submission',
+					},
+					{
+						displayName: 'jQuery',
+						name: 'jQuery',
+						default: 'https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js',
+						type: 'string',
+						description: 'URL for jQuery javascript',
 					},
 					{
 						displayName: 'Submit Button Label',
 						name: 'submitLabel',
 						default: 'Submit',
 						type: 'string',
+						description: 'Text to use for the submit button',
 					},
 				],
 			},
 		],
 	};
-
-	// @ts-ignore (because of request)
-	/*webhookMethods = {
-		default: {
-			async checkExists(this: IHookFunctions): Promise<boolean> {
-				const credentials = await this.getCredentials('trelloApi');
-
-				if (credentials === undefined) {
-					throw new NodeOperationError(this.getNode(), 'No credentials got returned!');
-				}
-
-				// Check all the webhooks which exist already if it is identical to the
-				// one that is supposed to get created.
-				const endpoint = `tokens/${credentials.apiToken}/webhooks`;
-
-				const responseData = await apiRequest.call(this, 'GET', endpoint, {});
-
-				const idModel = this.getNodeParameter('id') as string;
-				const webhookUrl = this.getNodeWebhookUrl('default');
-
-				for (const webhook of responseData) {
-					if (webhook.idModel === idModel && webhook.callbackURL === webhookUrl) {
-						// Set webhook-id to be sure that it can be deleted
-						const webhookData = this.getWorkflowStaticData('node');
-						webhookData.webhookId = webhook.id as string;
-						return true;
-					}
-				}
-
-				return false;
-			},
-			async create(this: IHookFunctions): Promise<boolean> {
-				const webhookUrl = this.getNodeWebhookUrl('default');
-
-				const credentials = await this.getCredentials('trelloApi');
-				if (credentials === undefined) {
-					throw new NodeOperationError(this.getNode(), 'No credentials got returned!');
-				}
-
-				const idModel = this.getNodeParameter('id') as string;
-
-				const endpoint = `tokens/${credentials.apiToken}/webhooks`;
-
-				const body = {
-					description: `n8n Webhook - ${idModel}`,
-					callbackURL: webhookUrl,
-					idModel,
-				};
-
-				const responseData = await apiRequest.call(this, 'POST', endpoint, body);
-
-				if (responseData.id === undefined) {
-					// Required data is missing so was not successful
-					return false;
-				}
-
-				const webhookData = this.getWorkflowStaticData('node');
-				webhookData.webhookId = responseData.id as string;
-
-				return true;
-			},
-			async delete(this: IHookFunctions): Promise<boolean> {
-				const webhookData = this.getWorkflowStaticData('node');
-
-				if (webhookData.webhookId !== undefined) {
-					const credentials = await this.getCredentials('trelloApi');
-					if (credentials === undefined) {
-						throw new NodeOperationError(this.getNode(), 'No credentials got returned!');
-					}
-
-					const endpoint = `tokens/${credentials.apiToken}/webhooks/${webhookData.webhookId}`;
-
-					const body = {};
-
-					try {
-						await apiRequest.call(this, 'DELETE', endpoint, body);
-					} catch (error) {
-						return false;
-					}
-
-					// Remove from the static workflow data so that it is clear
-					// that no webhooks are registred anymore
-					delete webhookData.webhookId;
-				}
-
-				return true;
-			},
-		},
-	};*/
-
-
 
 	async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
 		const webhookName = this.getWebhookName();
@@ -254,43 +272,89 @@ export class FormTrigger implements INodeType {
 			const cssFile = options.cssFile ? options.cssFile : 'https://joffcom.github.io/style.css';
 			const pageTitle = this.getNodeParameter('pageTitle', 0) as string;
 			const pageDescription = this.getNodeParameter('pageDescription', 0) as string;
+			const formType = this.getNodeParameter('formType', 0) as string;
 
-			// HTML Fields
-			const formFields = this.getNodeParameter(
-				'fields.item',
-				0,
-			) as unknown as IDataObject[];
+			let htmlFields = '';
 
-			let htmlFields : string = '';
+			if (formType === 'customHTML') {
+				htmlFields = this.getNodeParameter('formHTML', 0) as string;
+			} else {
+				// HTML Fields
+				const formFields = this.getNodeParameter(
+					'fields.item',
+					0,
+				) as unknown as IDataObject[];
 
-			for (const field of formFields) {
-				htmlFields += `<div class="form-group">
-					<label for="${field.name}">${field.label}</label>
-					<input type="${field.inputType}" class="form-control" id="${field.name}" name="${field.name}" ${field.required ? 'required' : ''}/>
-				</div>`
-				//htmlFields += `<input id="${field.name}" type="${field.inputType}" name="${field.name}" ${field.required ? 'required' : ''}/>`
+				for (const field of formFields) {
+					htmlFields += '<div class="form-group">'
+					// No label for hidden fields
+					if (field.inputType !== 'hidden') {
+						htmlFields += `<label for="${field.name}">${field.label}</label>`
+						htmlFields += `<input type="${field.inputType}" class="form-control" id="${field.name}" name="${field.name}" value"${field.value}"/>`
+					} else {
+						htmlFields += `<input type="${field.inputType}" class="form-control" id="${field.name}" name="${field.name}" ${field.required ? 'required' : ''}/>`
+					}
+					htmlFields += '</div>';
+				}
 			}
+
+			let defaultJS = `$(document).on('submit','#n8n-form',function(e){
+	$.post('#', $('#n8n-form').serialize(), function(result) {
+		var resp = jQuery.parseJSON(result);
+		if (resp.status === 'ok') {
+			$("#status").attr('class', 'alert alert-success');
+			$("#status").show();
+			$('#status-text').text('Form has been submitted.');
+		} else {
+		$("#status").attr('class', 'alert alert-danger');
+		$("#status").show();
+		$('#status-text').text('Something went wrong.');
+		}
+	});
+	return false;
+});`;
+
+			let javascript = options.javascript ? options.javascript : defaultJS;
+			let formName = options.formName ? options.formName : 'n8n-form';
+			let formId = options.formId ? options.formId : 'n8n-form';
+			let jQuery = options.jQuery ? options.jQuery : 'https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js';
+			let bootstrapCss = options.bootstrap ? options.bootstrap : 'https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css';
 
 
 			const res = this.getResponseObject();
 			const testForm = `<html>
 			<head>
 				<title>${pageTitle}</title>
-				<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+				<link rel="stylesheet" href="${bootstrapCss}" crossorigin="anonymous">
 				<link rel="stylesheet" href="${cssFile}" crossorigin="anonymous">
+
+				<script src="${jQuery}" type="text/javascript"></script>
+				<script type="text/javascript">
+					${javascript}
+				</script>
 				</head>
 				<body>
-				<div class="container">
-				<div class="page">
-				<div class="form"><h1>${pageTitle}</h1><p>${pageDescription}</p>
-<form action='#' method='post'>
-<div class="item">
-${htmlFields}
-</div>
-<div class="btn-block">
-<button type="submit">${submitLabel}</button>
-</div>
-</form>             </div></div>   </div>  </body></html>`;
+					<div class="container">
+						<div class="page">
+						<div id="status" style="display: none" class="alert alert-danger">
+            <p id="status-text" class="status-text"></p>
+          </div>
+							<div class="form">
+								<h1>${pageTitle}</h1>
+								<p>${pageDescription}</p>
+								<form action='#' method='POST' name='${formName}' id='${formId}'>
+									<div class="item">
+										${htmlFields}
+									</div>
+									<div class="btn-block">
+										<button type="submit">${submitLabel}</button>
+									</div>
+								</form>
+							</div>
+						</div>
+					</div>
+				</body>
+			</html>`;
 			res.status(200).send(testForm).end();
 			return {
 				noWebhookResponse: true,
@@ -300,6 +364,7 @@ ${htmlFields}
 		const bodyData = this.getBodyData();
 
 		return {
+			webhookResponse: '{"status": "ok"}',
 			workflowData: [
 				this.helpers.returnJsonArray(bodyData),
 			],

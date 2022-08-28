@@ -1,47 +1,74 @@
-![Banner image](https://user-images.githubusercontent.com/10284570/173569848-c624317f-42b1-45a6-ab09-f0ea3c247648.png)
+# n8n-nodes-form-trigger
 
-# n8n-nodes-starter
+This is an n8n community node. It lets you create a form to start your n8n workflows.
 
-This repo contains example nodes to help you get started building your own custom integrations for [n8n](n8n.io). It includes the node linter and other dependencies.
+[n8n](https://n8n.io/) is a [fair-code licensed](https://docs.n8n.io/reference/license/) workflow automation platform.
 
-To make your custom node available to the community, you must create it as an npm package, and [submit it to the npm registry](https://docs.npmjs.com/packages-and-modules/contributing-packages-to-the-registry).
+[Installation](#installation)  
+[Compatibility](#compatibility)  
+[Usage](#usage)  <!-- delete if not using this section -->  
+[Resources](#resources)  
+[Version history](#version-history)  <!-- delete if not using this section -->  
 
-## Prerequisites
+## Installation
 
-You need the following installed on your development machine:
+Follow the [installation guide](https://docs.n8n.io/integrations/community-nodes/installation/) in the n8n community nodes documentation.
 
-* [git](https://git-scm.com/downloads)
-* Node.js and npm. Minimum version Node 16. You can find instructions on how to install both using nvm (Node Version Manager) for Linux, Mac, and WSL [here](https://github.com/nvm-sh/nvm). For Windows users, refer to Microsoft's guide to [Install NodeJS on Windows](https://docs.microsoft.com/en-us/windows/dev-environment/javascript/nodejs-on-windows).
-* Install n8n with:
-	```
-	npm install n8n -g
-	```
-* Recommended: follow n8n's guide to [set up your development environment](https://docs.n8n.io/integrations/creating-nodes/build/node-development-environment/).
+## Compatibility
+
+Tested against 0.191.1 and 0.192.2
+
+## Usage
+
+Add the Form Trigger node to your workflow and either use the form builder or add your own custom html for your form. Once running use the Webhook GET URL.
+
+When using custom HTML for your form make sure you include the name field for your form items unless you also change the javascript for the submission.
+
+## Resources
+
+* [n8n community nodes documentation](https://docs.n8n.io/integrations/community-nodes/)
+* [Sample CSS File](https://joffcom.github.io/style.css)
+
+### Form HTML
+When coming up with your CSS the below HTML is the default structure used, In a future release using HTML from a file may be supported.
+``` html
+<html>
+	<head>
+		<title>{REPLACED WITH PAGE TITLE}</title>
+		<link rel="stylesheet" href="{REPLACED WITH BOOTSTRAP LINK}" crossorigin="anonymous">
+		<link rel="stylesheet" href="{REPLACED WITH CSS LINK}" crossorigin="anonymous">
+
+		<script src="{REPLACED WITH JQUERY LINK}" type="text/javascript"></script>
+		<script type="text/javascript">
+			${REPLACED WITH SUBMISSION JS}
+		</script>
+	</head>
+	<body>
+		<div class="container">
+			<div class="page">
+				<div id="status" style="display: none" class="alert alert-danger">
+					<p id="status-text" class="status-text">{REPLACED WITH MESSAGE FROM JS}</p>
+				</div>
+				<div class="form">
+					<h1>{REPLACED WITH PAGE TITLE}</h1>
+					<p>{REPLACED WITH FORM DESCRIPTION}</p>
+					<form action='#' method='POST' name='{REPLACED WITH FORM NAME}' id='{REPLCED WITH FORM ID}'>
+						<div class="item">
+							{REPLACED WITH CUSTOM HTML OR BUILDER}
+						</div>
+						<div class="btn-block">
+							<button type="submit">{REPLACED WITH SUBMIT LABEL}</button>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
+```
+
+## Version history
+
+0.1.0 - Initial Release
 
 
-## Using this starter
-
-These are the basic steps for working with the starter. For detailed guidance on creating and publishing nodes, refer to the [documentation](https://docs.n8n.io/integrations/creating-nodes/).
-
-1. [Generate a new repository](https://github.com/n8n-io/n8n-nodes-starter/generate) from this template repository.
-2. Clone your new repo:
-    ```
-    git clone https://github.com/<your organization>/<your-repo-name>.git
-    ```
-3. Run `npm i` to install dependencies.
-4. Open the project in your editor.
-5. Browse the examples in `/nodes` and `/credentials`. Modify the examples, or replace them with your own nodes.
-6. Update the `package.json` to match your details.
-7. Run `npm run lint` to check for errors or `npm run lintfix` to automatically fix errors when possible.
-8. Test your node locally. Refer to [Run your node locally](https://docs.n8n.io/integrations/creating-nodes/test/run-node-locally/) for guidance.
-9. Replace this README with documentation for your node. Use the [README_TEMPLATE](README_TEMPLATE.md) to get started.
-10. Update the LICENSE file to use your details.
-11. [Publish](https://docs.npmjs.com/packages-and-modules/contributing-packages-to-the-registry) your package to npm.
-
-## More information
-
-Refer to our [documentation on creating nodes](https://docs.n8n.io/integrations/creating-nodes/) for detailed information on building your own nodes.
-
-## License
-
-[MIT](https://github.com/n8n-io/n8n-nodes-starter/blob/master/LICENSE.md)
