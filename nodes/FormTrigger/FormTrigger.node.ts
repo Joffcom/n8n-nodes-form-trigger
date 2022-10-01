@@ -311,15 +311,18 @@ return false;
 
 				for (const field of formFields) {
 					const valAttr = typeof field.value !== 'undefined' ? ` value="${field.value}"` : '';
+
 					const placeholderAttr = typeof field.placeholder !== 'undefined' ? ` placeholder="${field.placeholder}"` : '';
 					const reqAttr = field.required ? ' required' : '';
 					const readOnlyAttr = field.readOnly ? ' readonly' : '';
+
 					htmlFields += '<div class="form-group">';
 					// No label for hidden fields
 					if (field.inputType !== 'hidden') {
 						htmlFields += `<label for="${field.name}">${field.label}</label>`;
 					}
 					htmlFields += `<input type="${field.inputType}" class="form-control" id="${field.name}" name="${field.name}"${placeholderAttr}${valAttr}${reqAttr}${readOnlyAttr}/>`;
+
 					htmlFields += '</div>';
 				}
 			}
