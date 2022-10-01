@@ -286,14 +286,14 @@ return false;
 				) as unknown as IDataObject[];
 
 				for (const field of formFields) {
+					const valAttr = typeof field.value !== 'undefined' ? ` value="${field.value}"` : '';
+					const reqAttr = field.required ? ' required' : '';
 					htmlFields += '<div class="form-group">';
 					// No label for hidden fields
 					if (field.inputType !== 'hidden') {
 						htmlFields += `<label for="${field.name}">${field.label}</label>`;
-						htmlFields += `<input type="${field.inputType}" class="form-control" id="${field.name}" name="${field.name}" value"${field.value}"/>`;
-					} else {
-						htmlFields += `<input type="${field.inputType}" class="form-control" id="${field.name}" name="${field.name}" ${field.required ? 'required' : ''}/>`;
 					}
+					htmlFields += `<input type="${field.inputType}" class="form-control" id="${field.name}" name="${field.name}"${valAttr}${reqAttr}/>`;
 					htmlFields += '</div>';
 				}
 			}
