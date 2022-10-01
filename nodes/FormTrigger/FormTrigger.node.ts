@@ -170,6 +170,23 @@ export class FormTrigger implements INodeType {
 									show: {
 										inputType: [
 											'hidden',
+											'text',
+											'email',
+										],
+									},
+								},
+							},
+							{
+								displayName: 'Placeholder',
+								name: 'placeholder',
+								type: 'string',
+								default: '',
+								description: 'Placeholder value to use',
+								displayOptions : {
+									show: {
+										inputType: [
+											'text',
+											'email',
 										],
 									},
 								},
@@ -180,6 +197,13 @@ export class FormTrigger implements INodeType {
 								type: 'boolean',
 								default: false,
 								description: 'Whether the field is required or not',
+							},
+							{
+								displayName: 'Read-Only',
+								name: 'readOnly',
+								type: 'boolean',
+								default: false,
+								description: 'Whether the field is read-only or not',
 							},
 						],
 					},
@@ -287,13 +311,18 @@ return false;
 
 				for (const field of formFields) {
 					const valAttr = typeof field.value !== 'undefined' ? ` value="${field.value}"` : '';
+
+					const placeholderAttr = typeof field.placeholder !== 'undefined' ? ` placeholder="${field.placeholder}"` : '';
 					const reqAttr = field.required ? ' required' : '';
+					const readOnlyAttr = field.readOnly ? ' readonly' : '';
+
 					htmlFields += '<div class="form-group">';
 					// No label for hidden fields
 					if (field.inputType !== 'hidden') {
 						htmlFields += `<label for="${field.name}">${field.label}</label>`;
 					}
-					htmlFields += `<input type="${field.inputType}" class="form-control" id="${field.name}" name="${field.name}"${valAttr}${reqAttr}/>`;
+					htmlFields += `<input type="${field.inputType}" class="form-control" id="${field.name}" name="${field.name}"${placeholderAttr}${valAttr}${reqAttr}${readOnlyAttr}/>`;
+
 					htmlFields += '</div>';
 				}
 			}
