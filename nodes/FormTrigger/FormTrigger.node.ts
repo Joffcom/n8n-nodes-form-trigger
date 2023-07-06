@@ -4,10 +4,38 @@ import {
 
 import {
 	IDataObject,
+	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
 	IWebhookResponseData,
 } from 'n8n-workflow';
+
+import fs from 'fs';
+
+import formidable from 'formidable';
+
+const defaultJS = `$(document).on('submit','#n8n-form',function(e){
+	var formData = new FormData($("#n8n-form").get(0));
+	$.post({
+		url: '#',
+		data: formData,
+		contentType: false,
+		processData: false,
+		success: function(result) {
+			var resp = jQuery.parseJSON(result);
+			if (resp.status === 'ok') {
+				$("#status").attr('class', 'alert alert-success');
+				$("#status").show();
+				$('#status-text').text('Form has been submitted.');
+			} else {
+				$("#status").attr('class', 'alert alert-danger');
+				$("#status").show();
+				$('#status-text').text('Something went wrong.');
+			}
+		},
+	});
+	return false;
+});`;
 
 export class FormTrigger implements INodeType {
 	description: INodeTypeDescription = {
@@ -147,6 +175,10 @@ export class FormTrigger implements INodeType {
 										value: 'email',
 									},
 									{
+										name: 'File',
+										value: 'file',
+									},
+									{
 										name: 'Hidden',
 										value: 'hidden',
 									},
@@ -231,6 +263,13 @@ export class FormTrigger implements INodeType {
 						description: 'URL for custom CSS, For an example see "https://joffcom.github.io/style.css"',
 					},
 					{
+						displayName: 'Detailed Body',
+						name: 'detailedBody',
+						type: 'boolean',
+						default: false,
+						description: 'Whether to just output the form data (if False) or more information such as headers and query params (if True) in JSON data',
+					},
+					{
 						displayName: 'Form ID',
 						name: 'formId',
 						default: 'n8n-form',
@@ -247,21 +286,7 @@ export class FormTrigger implements INodeType {
 					{
 						displayName: 'Javascript',
 						name: 'javascript',
-						default: `$(document).on('submit','#n8n-form',function(e){
-	$.post('#', $('#n8n-form').serialize(), function(result) {
-		var resp = jQuery.parseJSON(result);
-		if (resp.status === 'ok') {
-			$("#status").attr('class', 'alert alert-success');
-			$("#status").show();
-			$('#status-text').text('Form has been submitted.');
-		} else {
-			$("#status").attr('class', 'alert alert-danger');
-			$("#status").show();
-			$('#status-text').text('Something went wrong.');
-		}
-	});
-return false;
-});`,
+						default: defaultJS, // eslint-disable-line n8n-nodes-base/node-param-default-missing
 						type: 'string',
 						typeOptions: {
 							alwaysOpenEditWindow: true,
@@ -289,9 +314,11 @@ return false;
 
 	async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
 		const webhookName = this.getWebhookName();
+		const req = this.getRequestObject();
+		const resp = this.getResponseObject();
+		const options = this.getNodeParameter('options', 0) as IDataObject;
 
 		if (webhookName === 'displayForm') {
-			const options = this.getNodeParameter('options', 0) as IDataObject;
 			const submitLabel = options.submitLabel ? options.submitLabel : 'Submit';
 			const cssFile = options.cssFile ? options.cssFile : 'https://joffcom.github.io/style.css';
 			const pageTitle = this.getNodeParameter('pageTitle', 0) as string;
@@ -327,30 +354,12 @@ return false;
 				}
 			}
 
-			const defaultJS = `$(document).on('submit','#n8n-form',function(e){
-	$.post('#', $('#n8n-form').serialize(), function(result) {
-		var resp = jQuery.parseJSON(result);
-		if (resp.status === 'ok') {
-			$("#status").attr('class', 'alert alert-success');
-			$("#status").show();
-			$('#status-text').text('Form has been submitted.');
-		} else {
-		$("#status").attr('class', 'alert alert-danger');
-		$("#status").show();
-		$('#status-text').text('Something went wrong.');
-		}
-	});
-	return false;
-});`;
-
 			const javascript = options.javascript ? options.javascript : defaultJS;
 			const formName = options.formName ? options.formName : 'n8n-form';
 			const formId = options.formId ? options.formId : 'n8n-form';
 			const jQuery = options.jQuery ? options.jQuery : 'https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js';
 			const bootstrapCss = options.bootstrap ? options.bootstrap : 'https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css';
 
-
-			const res = this.getResponseObject();
 			const testForm = `<html>
 			<head>
 				<title>${pageTitle}</title>
@@ -384,19 +393,64 @@ return false;
 					</div>
 				</body>
 			</html>`;
-			res.status(200).send(testForm).end();
+			resp.status(200).send(testForm).end();
 			return {
 				noWebhookResponse: true,
 			};
 		}
 
-		const bodyData = this.getBodyData();
+		const form = new formidable.IncomingForm({ multiples: true });
+		return new Promise((resolve, reject) => {
+			form.parse(req, async (err, data, files) => {
+				const returnItem: INodeExecutionData = {
+					binary: {},
+					json: options.detailedBody ? {
+						headers: this.getHeaderData(),
+						params: this.getParamsData(),
+						query: this.getQueryData(),
+						body: data,
+					} : data,
+				};
 
-		return {
-			webhookResponse: '{"status": "ok"}',
-			workflowData: [
-				this.helpers.returnJsonArray(bodyData),
-			],
-		};
+				let count = 0;
+				// now process the files
+				for (const xfile of Object.keys(files)) {
+					const processFiles: formidable.File[] = [];
+					let multiFile = false;
+					if (Array.isArray(files[xfile])) {
+						processFiles.push(...files[xfile] as formidable.File[]);
+						multiFile = true;
+					} else {
+						processFiles.push(files[xfile] as formidable.File);
+					}
+
+					let fileCount = 0;
+					for (const file of processFiles) {
+						let binaryPropertyName = xfile;
+						if (binaryPropertyName.endsWith('[]')) {
+							binaryPropertyName = binaryPropertyName.slice(0, -2);
+						}
+						if (multiFile === true) {
+							binaryPropertyName += fileCount++;
+						}
+						if (options.binaryPropertyName) {
+							binaryPropertyName = `${options.binaryPropertyName}${count}`;
+						}
+
+						const fileJson = file.toJSON() as unknown as IDataObject;
+						const fileContent = await fs.promises.readFile(file.path);
+
+						returnItem.binary![binaryPropertyName] = await this.helpers.prepareBinaryData(Buffer.from(fileContent), fileJson.name as string, fileJson.type as string);
+
+						count += 1;
+					}
+				}
+
+				resolve({
+					webhookResponse: '{"status": "ok"}',
+					workflowData: [[returnItem,],],
+				});
+			});
+		});
 	}
 }
